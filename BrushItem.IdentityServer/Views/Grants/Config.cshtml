@@ -1,0 +1,140 @@
+﻿
+@{ ViewData["Title"] = "Config"; }
+
+
+<div class="grants-page">
+    <div class="lead">
+        <h1>All Grants Type Config</h1>
+        <p>Below is the list of configs,you can configure it according to the type of authorization you need.</p>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <div class="row">
+                <div class="col-sm-8 card-title">
+                    <h3><strong>1、Authorization Code</strong></h3>
+                </div>
+                <div class="grey888">
+                    <div>「授权码模式适用于有后端的应用，因为客户端根据授权码去请求token时是需要把客户端密码转进来的，为了避免客户端密码被暴露，所以请求token这个过程需要放在后台。」</div>
+                    <div>
+                        「授权码授权流程描述」
+                    </div>
+                    <div>
+                        （A）「用户访问第三方应用，第三方应用将用户导向认证服务器」；
+                    </div>
+                    <div>
+                        （B）「用户选择是否给予第三方应用授权」；
+                    </div>
+                    <div>
+                        （C）「假设用户给予授权，认证服务器将用户导向第三方应用事先指定的重定向URI，同时带上一个授权码」；
+                    </div>
+                    <div>
+                        （D）「第三方应用收到授权码，带上上一步时的重定向URI，向认证服务器申请访问令牌。这一步是在第三方应用的后台的服务器上完成的，对用户不可见」；
+                    </div>
+                    <div>
+                        （E）「认证服务器核对了授权码和重定向URI，确认无误后，向第三方应用发送访问令牌(Access Token)和更新令牌(Refresh token)」；
+                    </div>
+                    <div>
+                        （F）「访问令牌过期后，刷新访问令牌」；
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h5 class="Grant-Config"> 授权端:</h5>
+            <pre>
+                 new Client
+                 {
+                    ClientId = "vclient",
+                    ClientName = "Test",
+                    AllowedGrantTypes = GrantTypes.Code,
+                    RequireConsent= true,
+                    RedirectUris={ "http://127.0.0.1:8080/callback.html", "https://localhost:8080/callback.html" },
+                    PostLogoutRedirectUris={ "https://localhost:8080/" },
+                    AllowedCorsOrigins ={ "https://localhost:8080", "https://127.0.0.1:8080"},
+                    AllowAccessTokensViaBrowser=true,
+                    RequireClientSecret = false,
+                    AllowOfflineAccess =true,
+                    AlwaysSendClientClaims = true,
+                    RequirePkce =false,
+                    AccessTokenLifetime = 1800,
+                    AllowedScopes=
+                     {
+                        "api1",
+                        "openid",
+                        "role",
+                        "profile",
+                        "email",
+                         StandardScopes.OfflineAccess,
+
+                     }
+                    
+                 }
+            </pre>
+
+        </div>
+
+        <div>
+            <h5 class="Grant-Config">客户端:</h5>
+            <pre>
+                import axios from 'axios';
+                import { UserManager, WebStorageStateStore, User } from 'oidc-client';
+                export default class AuthService {
+                    private userManager: UserManager;
+                    constructor() {
+                        const AUTHORITY_DOMAIN = 'https://localhost:5002';
+                        const BASE_DOMAIN = 'https://localhost:8080';
+                        const userManagerConfig:any={
+                            userStore: new WebStorageStateStore({ store: window.localStorage }),
+                            authority: `${AUTHORITY_DOMAIN}`,
+                            client_id: "vclient", //客户端id
+                            redirect_uri: `${BASE_DOMAIN}/callback.html`,
+                            // silent_redirect_uri: '${BASE_DOMAIN}/silent-renew.html',
+                            post_logout_redirect_uri: `${BASE_DOMAIN}/`,
+                            response_type: 'code',
+                            scope: "api1 openid profile email offline_access",
+                            filterProtocolClaims: true,
+                            loadUserInfo: true
+            
+                        }
+                        this.userManager = new UserManager(userManagerConfig);
+                    }
+                    public getUser(): Promise<User | null> {
+                        return this.userManager.getUser();
+                    }
+                    public login(): Promise<void> {
+                        return this.userManager.signinRedirect();
+                    }
+
+                    public logout(): Promise<void> {
+                        return this.userManager.signoutRedirect();
+                    }
+
+                    public getAccessToken(): Promise<string> {
+                        return this.userManager.getUser().then((data: any) => {
+                            return data.access_token;
+                        });
+                    }
+                    public getrefreshToken(token:string):Promise<any>{
+                        const params:any = {
+                            client_id:'vclient',
+                            grant_type:"refresh_token",
+                            refresh_token:token
+                          };
+                          const loginParamsStr = qs.stringify(params);
+                          return axios({method:'post',url:'https://localhost:5002/connect/token',data:loginParamsStr,headers:{"Content-Type":"application/x-www-form-urlencoded"}})
+                          .then((data:any)=>{
+                              return Promise.resolve(data.data);
+                          });
+          
+                    }
+                }
+     
+            </pre>
+
+        </div>
+
+
+    </div>
+
+</div>

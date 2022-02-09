@@ -3,14 +3,14 @@
 
 
 using BrushItem.IdentityServer.Data;
+using BrushItem.IdentityServer.Helper;
 using IdentityModel;
-using IdentityServer4;
 using IdentityServer4.Events;
 using IdentityServer4.Extensions;
 using IdentityServer4.Models;
+using IdentityServer4.Quickstart.UI;
 using IdentityServer4.Services;
 using IdentityServer4.Stores;
-using IdentityServer4.Test;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace IdentityServerHost.Quickstart.UI
@@ -116,9 +117,11 @@ namespace IdentityServerHost.Quickstart.UI
             if (ModelState.IsValid)
             {
                 // 允许用户使用用户名
-                var user = await _userManager.FindByNameAsync(model.Username);
+                var user = _userManager.
+                    Users
+                    .FirstOrDefault(d => (d.LoginName == model.Username || d.Email == model.Username) && !d.tdIsDelete);
 
-                if (user != null && user.Validity)
+                if (user != null && !user.tdIsDelete)
                 {
                     // 使用密码验证
                     var result = await _signInManager.PasswordSignInAsync(user.UserName, model.Password, model.RememberLogin, lockoutOnFailure: true);
@@ -347,6 +350,273 @@ namespace IdentityServerHost.Quickstart.UI
             }
 
             return vm;
+        }
+        [HttpGet]
+        [Route("account/register")]
+        public IActionResult Register(string returnUrl = null)
+        {
+            ViewData["ReturnUrl"] = returnUrl;
+            return View();
+        }
+        [HttpPost]
+        [Route("account/register")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Register(RegisterViewModel model, string returnUrl = null, string rName = "AdminTest")
+        {
+            ViewData["ReturnUrl"] = returnUrl;
+            IdentityResult result = new IdentityResult();
+
+            if (ModelState.IsValid)
+            {
+                var userItem = _userManager.FindByNameAsync(model.LoginName).Result;
+
+                if (userItem == null)
+                {
+
+                    var user = new ApplicationUser
+                    {
+                        Email = model.Email,
+                        UserName = model.LoginName,
+                        RealName = model.RealName,
+                        sex = model.Sex,
+                        age = model.Birth.Year - DateTime.Now.Year,
+                        birth = model.Birth,
+                        FirstQuestion = model.FirstQuestion,
+                        SecondQuestion = model.SecondQuestion,
+                        addr = "",
+                        tdIsDelete = false
+                    };
+
+
+                    result = await _userManager.CreateAsync(user, model.Password);
+
+                    if (result.Succeeded)
+                    {
+                        //var claims = new List<Claim>{
+                        //            new Claim(JwtClaimTypes.Name, model.RealName),
+                        //            new Claim(JwtClaimTypes.Email, model.Email),
+                        //            new Claim(JwtClaimTypes.EmailVerified, "false", ClaimValueTypes.Boolean),
+                        //            new Claim("rolename", rName),
+                        //        };
+
+                        //claims.AddRange((new List<int> { 6 }).Select(s => new Claim(JwtClaimTypes.Role, s.ToString())));
+
+
+                        //result = _userManager.AddClaimsAsync(userItem, claims).Result;
+
+
+                        result = await _userManager.AddClaimsAsync(user, new Claim[]{
+                            new Claim(JwtClaimTypes.Name, model.RealName),
+                            new Claim(JwtClaimTypes.Email, model.Email),
+                            new Claim(JwtClaimTypes.EmailVerified, "false", ClaimValueTypes.Boolean),
+                            new Claim(JwtClaimTypes.Role, "6"),
+                            new Claim("rolename", rName),
+                        });
+                        if (!result.Succeeded)
+                        {
+                            throw new Exception(result.Errors.First().Description);
+                        }
+                        result = await _userManager.AddToRoleAsync(user, "user");
+                        if (!result.Succeeded)
+                        {
+                            throw new Exception(result.Errors.First().Description);
+                        }
+                        if (result.Succeeded)
+                        {
+                            // 可以直接登录
+                            //await _signInManager.SignInAsync(user, isPersistent: false);
+
+                            return RedirectToLocal(returnUrl);
+                        }
+                    }
+
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, $"{userItem?.UserName} already exists");
+
+                }
+
+                AddErrors(result);
+            }
+
+            // If we got this far, something failed, redisplay form
+            return View(model);
+        }
+
+        [HttpGet]
+        [Route("account/confirm-email")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ConfirmEmail(string userId, string code)
+        {
+            if (userId == null || code == null)
+            {
+                return RedirectToAction(nameof(HomeController.Index), "Home");
+            }
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                throw new ApplicationException($"Unable to load user with ID '{userId}'.");
+            }
+            var result = await _userManager.ConfirmEmailAsync(user, code);
+            return View(result.Succeeded ? "ConfirmEmail" : "Error");
+        }
+
+        [HttpGet]
+        [Route("account/forgot-password")]
+        [AllowAnonymous]
+        public IActionResult ForgotPassword()
+        {
+            return View();
+        }
+        [HttpPost]
+        [Route("account/forgot-password")]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var email = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
+                var roleName = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "rolename")?.Value;
+                if (email == model.Email || (roleName == "SuperAdmin"))
+                {
+
+                    var user = await _userManager.FindByEmailAsync(model.Email);
+                    //if (user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
+                    if (user == null)
+                    {
+                        // Don't reveal that the user does not exist or is not confirmed
+                        return RedirectToAction(nameof(ForgotPasswordConfirmation), new { ResetPassword = "邮箱不存在！" });
+                    }
+
+                    // For more information on how to enable account confirmation and password reset please
+                    // visit https://go.microsoft.com/fwlink/?LinkID=532713
+                    var code = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+                    var accessCode = MD5Helper.MD5Encrypt32(user.Id + code);
+                    var callbackUrl = Url.ResetPasswordCallbackLink(user.Id.ToString(), code, Request.Scheme, accessCode);
+
+                    var ResetPassword = $"Please reset your password by clicking here: <a href='{callbackUrl}'>link</a>";
+
+                    return RedirectToAction(nameof(ForgotPasswordConfirmation), new { ResetPassword = ResetPassword });
+                }
+                else if (!string.IsNullOrEmpty(model.FirstQuestion) && !string.IsNullOrEmpty(model.SecondQuestion))
+                {
+                    var user = _userManager.Users.FirstOrDefault(d => d.Email == model.Email && d.FirstQuestion == model.FirstQuestion && d.SecondQuestion == model.SecondQuestion);
+                    if (user == null)
+                    {
+                        return RedirectToAction(nameof(ForgotPasswordConfirmation), new { ResetPassword = "密保答案错误！" });
+                    }
+
+                    var code = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+                    var accessCode = MD5Helper.MD5Encrypt32(user.Id + code);
+                    var callbackUrl = Url.ResetPasswordCallbackLink(user.Id.ToString(), code, Request.Scheme, accessCode);
+
+
+                    var ResetPassword = $"Please reset your password by clicking here: <a href='{callbackUrl}'>link</a>";
+
+                    return RedirectToAction(nameof(ForgotPasswordConfirmation), new { ResetPassword = ResetPassword });
+                }
+                else
+                {
+                    var forgetPwdUrl = "https://github.com/anjoy8/Blog.IdentityServer/issues";
+                    return RedirectToAction(nameof(AccessDenied), new { errorMsg = $"只能在登录状态下或者输入正确密保的情况下，修改密码! <br>如果忘记密码，请联系超级管理员手动重置：<a href='{forgetPwdUrl}'>link</a>，提Issue" });
+                }
+            }
+
+            // If we got this far, something failed, redisplay form
+            return View(model);
+        }
+        [HttpGet]
+        [Route("account/forgot-password-confirmation")]
+        [AllowAnonymous]
+        public IActionResult ForgotPasswordConfirmation(string ResetPassword)
+        {
+            ViewBag.ResetPassword = ResetPassword;
+            return View();
+        }
+
+        [HttpGet]
+        [Route("account/reset-password")]
+        [AllowAnonymous]
+        public IActionResult ResetPassword(string code = null, string accessCode = null, string userId = "")
+        {
+            if (code == null || accessCode == null)
+            {
+                return RedirectToAction(nameof(AccessDenied), new { errorMsg = "code与accessCode必须都不能为空！" });
+            }
+            var model = new ResetPasswordViewModel { Code = code, AccessCode = accessCode, userId = userId };
+            return View(model);
+        }
+        [HttpPost]
+        [Route("account/reset-password")]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                // Don't reveal that the user does not exist
+                return RedirectToAction(nameof(ResetPasswordConfirmation));
+            }
+
+
+            // 防止篡改
+            var getAccessCode = MD5Helper.MD5Encrypt32(model.userId + model.Code);
+            if (getAccessCode != model.AccessCode)
+            {
+                return RedirectToAction(nameof(AccessDenied), new { errorMsg = "随机码已被篡改！密码重置失败！" });
+            }
+
+            if (user != null && user.Id.ToString() != model.userId)
+            {
+                return RedirectToAction(nameof(AccessDenied), new { errorMsg = "不能修改他人邮箱！密码重置失败！" });
+            }
+
+
+            var result = await _userManager.ResetPasswordAsync(user, model.Code, model.Password);
+            if (result.Succeeded)
+            {
+                return RedirectToAction(nameof(ResetPasswordConfirmation));
+            }
+            AddErrors(result);
+            return View();
+        }
+
+        [HttpGet]
+        [Route("account/reset-password-confirmation")]
+        [AllowAnonymous]
+        public IActionResult ResetPasswordConfirmation()
+        {
+            return View();
+        }
+
+        private IActionResult RedirectToLocal(string returnUrl)
+        {
+            if (Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+            else
+            {
+                return RedirectToAction(nameof(HomeController.Index), "Home");
+            }
+        }
+
+        private void AddErrors(IdentityResult result)
+        {
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
         }
     }
 }

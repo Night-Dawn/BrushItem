@@ -25,7 +25,8 @@ namespace BrushItem.Controllers
         {
             _logger = logger;
         }
-        [Authorize]
+        [Authorize(Roles = "user,admin")]
+        //[Authorize("Permission")]
         [HttpGet]
         public IEnumerable<WeatherForecast> Get()
         {

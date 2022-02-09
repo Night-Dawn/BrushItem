@@ -11,21 +11,21 @@ namespace BrushItem.IdentityServer.Data
 {
     public class ApplicationUser : IdentityUser<int>
     {
-        //可以在这里扩展，下文会说到
-        /// <summary>
-        /// 有效
-        /// </summary>
-        public bool Validity { get; set; } = true;
+        public string LoginName { get; set; }
 
-        /// <summary>
-        /// 昵称
-        /// </summary>
-        public string NickName { get; set; }
+        public string RealName { get; set; }
 
-        /// <summary>
-        /// 出生日期
-        /// </summary>
-        public DateTime BirthDate { get; set; }
+        public int sex { get; set; } = 0;
+
+        public int age { get; set; }
+
+        public DateTime birth { get; set; } = DateTime.Now;
+
+        public string addr { get; set; }
+        public string FirstQuestion { get; set; }
+        public string SecondQuestion { get; set; }
+
+        public bool tdIsDelete { get; set; }
 
         public ICollection<ApplicationUserRole> UserRoles { get; set; }
     }

@@ -1,8 +1,10 @@
+using Autofac.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using Serilog.Formatting.Compact;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -24,7 +26,8 @@ namespace BrushItem
             Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(Configuration)
             .Enrich.FromLogContext()
-            .WriteTo.Console()
+            .WriteTo.Console(new RenderedCompactJsonFormatter())
+            .WriteTo.File(formatter: new RenderedCompactJsonFormatter(), "logs/log.txt", rollingInterval: RollingInterval.Day)
             .CreateLogger();
             try
             {
@@ -52,10 +55,11 @@ namespace BrushItem
                         option.ConfigureHttpsDefaults(o =>
                         {
                             o.ServerCertificate =
-                            new System.Security.Cryptography.X509Certificates.X509Certificate2(@"C:\localhost.pfx", "123456789");//证书路径、密码
+                            new System.Security.Cryptography.X509Certificates.X509Certificate2(@"./localhost.pfx", "123456789");//证书路径、密码
                         });
                     });
-                }).UseSerilog(dispose: true);
+                }).UseSerilog(dispose: true)
+                .UseServiceProviderFactory(new AutofacServiceProviderFactory());
         
     }
 }

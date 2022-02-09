@@ -93,5 +93,11 @@ namespace IdentityServerHost.Quickstart.UI
                 Grants = list
             };
         }
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult Config()
+        {
+            return View();
+        }
     }
 }

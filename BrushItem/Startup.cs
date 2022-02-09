@@ -12,14 +12,12 @@ using System;
 using System.Linq;
 using BrushItem.Shared.Profiles;
 using BrushItem.Respository;
-using System.Collections.Generic;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.IdentityModel.Tokens;
 using Swashbuckle.AspNetCore.Filters;
-using Microsoft.Extensions.Options;
-using Swashbuckle.AspNetCore.SwaggerGen;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Autofac;
+using BrushItem.Respository.Impl;
+using System.Security.Claims;
 
 namespace BrushItem
 {
@@ -50,7 +48,7 @@ namespace BrushItem
             .AddJwtBearer("Bearer", options =>
             {
                 options.Authority = "https://localhost:5002";
-
+                
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateAudience = false,
@@ -60,7 +58,8 @@ namespace BrushItem
                 options.RequireHttpsMetadata = false;
             });
             #endregion
-            services.AddAutoMapper(typeof(UserProfile).Assembly);
+            services.AddAutoMapper(typeof(QuestionProfile).Assembly);
+            //services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
@@ -109,7 +108,6 @@ namespace BrushItem
 
             });
 
-            services.AddScoped<IRepositoryWrapper, RepositoryWrapper>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -152,6 +150,14 @@ namespace BrushItem
             });
 
 
+        }
+        public void ConfigureContainer(ContainerBuilder builder)
+        {
+
+            //直接注册某一个类和接口
+            //左边的是实现类，右边的As是接口
+            //builder.RegisterType<RepositoryWrapper>().As<IRepositoryWrapper>().InstancePerLifetimeScope();
+            builder.RegisterType<RepositoryWrapper>().As<IRepositoryWrapper>();
         }
     }
 }

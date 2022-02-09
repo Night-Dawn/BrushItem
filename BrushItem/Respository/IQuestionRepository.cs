@@ -2,14 +2,14 @@
 using BrushItem.Shared.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace BrushItem.Respository
 {
-    public interface IUserRepository : IRepositoryBase<User>
+    public interface IQuestionRepository: IRepositoryBase<SingleChoice>
     {
-        
-        List<User> GetUserAsync();
-        void CreateUser(User user);
+        Task<SingleChoice> GetFirstQuestionAsync(); 
     }
 }

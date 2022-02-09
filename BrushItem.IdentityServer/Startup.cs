@@ -3,9 +3,14 @@
 
 
 using BrushItem.IdentityServer.Data;
+using BrushItem.IdentityServer.Extensions;
+using BrushItem.IdentityServer.Quickstart.Account;
 using IdentityModel;
 using IdentityServer4.EntityFramework.DbContexts;
 using IdentityServer4.EntityFramework.Mappers;
+using IdentityServer4.Hosting;
+using IdentityServer4.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -42,7 +47,8 @@ namespace BrushItem.IdentityServer
                 {
                     policy.WithOrigins("https://localhost:8080")
                         .AllowAnyHeader()
-                        .AllowAnyMethod();
+                        .AllowAnyMethod()
+                        .AllowCredentials();
                 });
             });
             services.Configure<CookiePolicyOptions>(options =>
@@ -106,6 +112,8 @@ namespace BrushItem.IdentityServer
             //        options.ClientSecret = "5dccf2964824665e33e6ba7bc1f6a214f1510c48";
             //        options.Scope.Add("user:email");
             //    }); ;
+            services.AddTransient<ITokenService, CustomTokenService>();
+            services.AddTransient<IUserSession, CustomUserSession>();
 
         }
 
@@ -135,106 +143,107 @@ namespace BrushItem.IdentityServer
                 endpoints.MapDefaultControllerRoute();
             });
         }
-        private void InitDatabase(IApplicationBuilder app)
+        //private void InitDatabase(IApplicationBuilder app)
+        //{
+        //    // 从根作用域中创建一个子作用域，这个在之前的依赖注入生命周期中有说到
+        //    using (var scope = app.ApplicationServices.CreateScope())
+        //    {
+        //        // 每个子作用域中有对应的容器，可以取到对应的对象
+        //        scope.ServiceProvider.GetRequiredService<PersistedGrantDbContext>().Database.Migrate();
+        //        // 这里取到配置数据上下文
+        //        var configurationDbContext = scope.ServiceProvider.GetRequiredService<ConfigurationDbContext>();
+        //        // 先判断Clients表中有数据没，没有就将内存中的数据存进去
+        //        if (!configurationDbContext.Clients.Any())
+        //        {
+        //            // 遍历内存中配置的客户端数据，直接存进去即可
+        //            foreach (var client in Config.Clients)
+        //            {
+        //                configurationDbContext.Clients.Add(client.ToEntity());
+        //            }
+        //            configurationDbContext.SaveChanges();
+        //        }
+        //        // 存ApiScopes
+        //        if (!configurationDbContext.ApiScopes.Any())
+        //        {
+        //            foreach (var apiScope in Config.ApiScopes)
+        //            {
+        //                configurationDbContext.ApiScopes.Add(apiScope.ToEntity());
+        //            }
+        //            configurationDbContext.SaveChanges();
+        //        }
+        //        //存IdentityResources
+        //        if (!configurationDbContext.IdentityResources.Any())
+        //        {
+        //            foreach (var identity in Config.IdentityResources)
+        //            {
+        //                configurationDbContext.IdentityResources.Add(identity.ToEntity());
+        //            }
+        //            configurationDbContext.SaveChanges();
+        //        }
+        //    }
+        //}
+
+        private void InitDatabaseUser(IApplicationBuilder app)
         {
             // 从根作用域中创建一个子作用域，这个在之前的依赖注入生命周期中有说到
             using (var scope = app.ApplicationServices.CreateScope())
             {
                 // 每个子作用域中有对应的容器，可以取到对应的对象
-                scope.ServiceProvider.GetRequiredService<PersistedGrantDbContext>().Database.Migrate();
-                // 这里取到配置数据上下文
-                var configurationDbContext = scope.ServiceProvider.GetRequiredService<ConfigurationDbContext>();
-                // 先判断Clients表中有数据没，没有就将内存中的数据存进去
-                if (!configurationDbContext.Clients.Any())
-                {
-                    // 遍历内存中配置的客户端数据，直接存进去即可
-                    foreach (var client in Config.Clients)
-                    {
-                        configurationDbContext.Clients.Add(client.ToEntity());
-                    }
-                    configurationDbContext.SaveChanges();
-                }
-                // 存ApiScopes
-                if (!configurationDbContext.ApiScopes.Any())
-                {
-                    foreach (var apiScope in Config.ApiScopes)
-                    {
-                        configurationDbContext.ApiScopes.Add(apiScope.ToEntity());
-                    }
-                    configurationDbContext.SaveChanges();
-                }
-                //存IdentityResources
-                if (!configurationDbContext.IdentityResources.Any())
-                {
-                    foreach (var identity in Config.IdentityResources)
-                    {
-                        configurationDbContext.IdentityResources.Add(identity.ToEntity());
-                    }
-                    configurationDbContext.SaveChanges();
-                }
-            }
-        }
-
-        private void InitDatabaseUser(IApplicationBuilder app)
-            {
-                // 从根作用域中创建一个子作用域，这个在之前的依赖注入生命周期中有说到
-                using (var scope = app.ApplicationServices.CreateScope())
-                {
-                // 每个子作用域中有对应的容器，可以取到对应的对象
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 context.Database.Migrate();
 
                 scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.Migrate();
-                    // 这里取到配置数据上下文
-                    var configurationDbContext = scope.ServiceProvider.GetRequiredService<ConfigurationDbContext>();
-                    // 先判断Clients表中有数据没，没有就将内存中的数据存进去
+                // 这里取到配置数据上下文
+                var configurationDbContext = scope.ServiceProvider.GetRequiredService<ConfigurationDbContext>();
+                // 先判断Clients表中有数据没，没有就将内存中的数据存进去
 
-                    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-                    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
-                    foreach (var role in Config.Roles)
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
+                foreach (var role in Config.Roles)
+                {
+                    var res = roleManager.CreateAsync(role).Result;
+                    if (!res.Succeeded)
                     {
-                        var res = roleManager.CreateAsync(role).Result;
-                        if (!res.Succeeded)
-                        {
-                            throw new Exception(res.Errors.First().Description);
-                        }
-                        Console.WriteLine($"{role.Name} created!");
+                        throw new Exception(res.Errors.First().Description);
+                    }
+                    Console.WriteLine($"{role.Name} created!");
+                }
+
+                // 创建用户
+                foreach (var user in Config.Users)
+                {
+                    // 默认密码为 Test23
+                    var res = userManager.CreateAsync(user, "Test_123").Result;
+                    if (!res.Succeeded)
+                    {
+                        throw new Exception(res.Errors.First().Description);
                     }
 
-                    // 创建用户
-                    foreach (var user in Config.Users)
+                    // 创建用户的声明
+                    var claims = new List<Claim>
                     {
-                        // 默认密码为 Test23
-                        var res = userManager.CreateAsync(user, "Test_123").Result;
-                        if (!res.Succeeded)
-                        {
-                            throw new Exception(res.Errors.First().Description);
-                        }
-
-                        // 创建用户的声明
-                        var claims = new List<Claim>
-                    {
-                        new Claim(JwtClaimTypes.Name, user.NickName),
+                        new Claim(JwtClaimTypes.Name, user.LoginName),
                         new Claim(JwtClaimTypes.Email, user.Email)
                     };
 
-                        res = userManager.AddClaimsAsync(user, claims).Result;
-                        if (!res.Succeeded)
-                        {
-                            throw new Exception(res.Errors.First().Description);
-                        }
-
-                        // 创建用户的角色
-                        var role = user.UserName == "night" ? "admin" : "user";
-                        res = userManager.AddToRoleAsync(user, role).Result;
-                        if (!res.Succeeded)
-                        {
-                            throw new Exception(res.Errors.First().Description);
-                        }
-
-                        Console.WriteLine($"{user.NickName} created!");
+                    res = userManager.AddClaimsAsync(user, claims).Result;
+                    if (!res.Succeeded)
+                    {
+                        throw new Exception(res.Errors.First().Description);
                     }
+
+                    // 创建用户的角色
+                    var role = user.UserName == "night" ? "admin" : "user";
+                    res = userManager.AddToRoleAsync(user, role).Result;
+                    if (!res.Succeeded)
+                    {
+                        throw new Exception(res.Errors.First().Description);
+                    }
+
+                    Console.WriteLine($"{user.LoginName} created!");
                 }
             }
         }
+    }
+
 }

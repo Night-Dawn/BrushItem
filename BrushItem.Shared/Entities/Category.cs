@@ -1,11 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BrushItem.Shared.Entities
 {
     [Table("category")]
     public class Category
     {
-        public int Id { get; set; }
-        public int Name { get; set; }
+        public Guid Id { get; set; }
+        public string Name { get; set; }
     }
 }

@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrushItem.Shared", "BrushIt
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrushItem.IdentityServer", "BrushItem.IdentityServer\BrushItem.IdentityServer.csproj", "{0C23742A-161A-4CEC-9C05-C04C83A77C59}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrushItem.WebApiGateway", "BrushItem.WebApiGateway\BrushItem.WebApiGateway.csproj", "{60F37603-6891-4003-9CCF-64C4615847BF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{0C23742A-161A-4CEC-9C05-C04C83A77C59}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0C23742A-161A-4CEC-9C05-C04C83A77C59}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0C23742A-161A-4CEC-9C05-C04C83A77C59}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60F37603-6891-4003-9CCF-64C4615847BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60F37603-6891-4003-9CCF-64C4615847BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60F37603-6891-4003-9CCF-64C4615847BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60F37603-6891-4003-9CCF-64C4615847BF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

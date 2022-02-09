@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace BrushItem.Shared.Entities
 {
     [Table("choice")]
-    public class Choice: Question
+    public class MultipleChoice: Question
     {
         [Comment("选项A")]
         public string optionA { get; set; }

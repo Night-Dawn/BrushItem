@@ -9,8 +9,10 @@ namespace BrushItem.Data
 {
     public class BrushDbContext:DbContext
     {
-        public DbSet<User> Users { get; set; }
-        public DbSet<Choice> Choices { get; set; }
+        public DbSet<MultipleChoice> MultipleChoices { get; set; }
+        public DbSet<SingleChoice> SingleChoices { get; set; }
+        public DbSet<Blank> Blanks { get; set; }
+        public DbSet<Category> Categories { get; set; }
         public BrushDbContext(DbContextOptions<BrushDbContext> options) : base(options)
         {
 

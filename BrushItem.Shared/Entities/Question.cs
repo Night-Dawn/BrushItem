@@ -24,12 +24,14 @@ namespace BrushItem.Shared.Entities
 
         [Comment("题目分析")]
         public string Analysis { get; set; }
+        [Comment("正确答案")]
+        public string CorrectAnswer{ get; set; }
         [Comment("创建时间")]
         public DateTime CreatedTime { get; set; }
         [Comment("更新时间")]
         public DateTime UpdatedTime { get; set; }
-
-        [Comment("类别")]
+        public Guid CategoryId { get; set; }
+        [ForeignKey("CategoryId")]
         public Category Category { get; set; }
     }
 }

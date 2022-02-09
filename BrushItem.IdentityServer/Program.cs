@@ -60,7 +60,7 @@ namespace BrushItem.IdentityServer
                         option.ConfigureHttpsDefaults(o =>
                         {
                             o.ServerCertificate =
-                            new System.Security.Cryptography.X509Certificates.X509Certificate2(@"C:\localhost.pfx", "123456789");//证书路径、密码
+                            new System.Security.Cryptography.X509Certificates.X509Certificate2(@"./localhost.pfx", "123456789");//证书路径、密码
                         });
                     });
                 });

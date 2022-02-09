@@ -6,9 +6,9 @@ namespace BrushItem.Shared.Profiles
 {
     public class UserProfile : Profile
     {
-        public UserProfile()
-        {
-            CreateMap<UserAddDto, User>().ReverseMap();
-        }
+        //public UserProfile()
+        //{
+        //    CreateMap<UserAddDto, User>().ReverseMap();
+        //}
     }
 }

@@ -10,6 +10,7 @@ namespace BrushItem.Respository
     /// </summary>
     public interface IRepositoryWrapper
     {
-        IUserRepository User { get; }
+        //IUserRepository User { get; }
+        IQuestionRepository question { get; }
     }
 }

@@ -5,17 +5,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace BrushItem.Respository
+namespace BrushItem.Respository.Impl
 {
     public class RepositoryBase<T>: IRepositoryBase<T> where T : class
     {
         private readonly BrushDbContext context;
-        private readonly IMapper mapper;
 
-        public RepositoryBase(BrushDbContext context, IMapper mapper)
+        public RepositoryBase(BrushDbContext context)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context));
-            this.mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
         public void Create(T entity)

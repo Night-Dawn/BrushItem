@@ -53,7 +53,7 @@ namespace BrushItem.IdentityServer
                     AllowedScopes=
                      {
                         "api1",
-                        IdentityServerConstants.StandardScopes.OpenId
+                        IdentityServerConstants.StandardScopes.OpenId,
                      }
                  },
                  new Client
@@ -70,7 +70,7 @@ namespace BrushItem.IdentityServer
                     AllowOfflineAccess =true,
                     AlwaysSendClientClaims = true,
                     RequirePkce =false,
-                    AccessTokenLifetime = 50,
+                    AccessTokenLifetime = 1800,
                     AllowedScopes=
                      {
                         "api1",
@@ -91,23 +91,23 @@ namespace BrushItem.IdentityServer
                 {
                     new ApplicationUser
                     {
-                        BirthDate = DateTime.Now,
+                        birth = DateTime.Now,
                         Email = "nightdawn97@outlook.com",
                         UserName = "night",
-                        NickName = "Night Dawn",
+                        LoginName = "Night Dawn",
                         EmailConfirmed = true
                     },
                     new ApplicationUser
                     {
-                        BirthDate = DateTime.Now,
+                        birth = DateTime.Now,
                         Email = "user2@qq.com",
                         UserName = "user2",
-                        NickName = "用户2",
+                        LoginName = "用户2",
                         EmailConfirmed = true
                     },
                 };
 
-                    public static IEnumerable<ApplicationRole> Roles =>
+        public static IEnumerable<ApplicationRole> Roles =>
                         new[]
                         {
                     new ApplicationRole
